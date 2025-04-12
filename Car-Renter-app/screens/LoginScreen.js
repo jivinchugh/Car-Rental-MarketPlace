@@ -1,3 +1,6 @@
+/* Problem - had no idea of how to do navigation from within another component
+https://reactnavigation.org/docs/nesting-navigators/#navigating-to-a-screen-in-a-nested-navigator */
+
 import {
   StyleSheet,
   Text,
@@ -8,6 +11,7 @@ import {
   Pressable,
 } from "react-native";
 import { useState } from "react";
+
 
 // 1. TODO: import the required service  (db, auth, etc) from FirebaseConfig.js
 import { auth } from "../firebaseConfig";
@@ -37,7 +41,7 @@ const LoginScreen = ({ navigation }) => {
       await signInWithEmailAndPassword(auth, emailFromUI, passwordFromUI);
       alert("LOGIN SUCCESS!");
       console.log(auth.currentUser);
-      //navigation.navigate("MyListings");
+      navigation.navigate("TabContainerComponent", { screen: "MyBookings" }); //https://reactnavigation.org/docs/nesting-navigators/#navigating-to-a-screen-in-a-nested-navigator
     } catch (err) {
       console.log("Error when doing login");
       console.log(`Error code: ${err.code}`);
@@ -114,7 +118,7 @@ const LoginScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Turo - Car Marketplace app!</Text>
-      <Text style={styles.subtitle}>Sign in to continue</Text>
+      <Text style={styles.subtitle}>This is Renter App!</Text>
 
       {/* email tb */}
       <TextInput
