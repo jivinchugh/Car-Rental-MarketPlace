@@ -20,8 +20,8 @@ import {
 
 const LoginScreen = ({ navigation }) => {
   // form fields
-  const [emailFromUI, setEmailFromUI] = useState("jchugh@myseneca.ca");
-  const [passwordFromUI, setPasswordFromUI] = useState("123456");
+  const [emailFromUI, setEmailFromUI] = useState("Sean.muniz2000@gmail.com");
+  const [passwordFromUI, setPasswordFromUI] = useState("Admin12345");
   const [errorMessageLabel, setErrorMessageLabel] = useState(null);
 
 
