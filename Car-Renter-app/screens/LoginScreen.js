@@ -12,20 +12,17 @@ import {
 } from "react-native";
 import { useState } from "react";
 
-
 // 1. TODO: import the required service  (db, auth, etc) from FirebaseConfig.js
-import { auth } from "../firebaseConfig";
+import { auth, db } from "../firebaseConfig";
 
 // 2. TODO: import the specific functions from the service (import ___ from "firebase/firebase auth)
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-} from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { getDoc, doc } from "firebase/firestore";
 
 const LoginScreen = ({ navigation }) => {
   // form fields
-  const [emailFromUI, setEmailFromUI] = useState("jchugh@myseneca.ca");
-  const [passwordFromUI, setPasswordFromUI] = useState("123456");
+  const [emailFromUI, setEmailFromUI] = useState("sharaa@gmail.com");
+  const [passwordFromUI, setPasswordFromUI] = useState("Admin12345");
   const [errorMessageLabel, setErrorMessageLabel] = useState(null);
 
   const loginPressed = async () => {
@@ -39,9 +36,24 @@ const LoginScreen = ({ navigation }) => {
 
     try {
       await signInWithEmailAndPassword(auth, emailFromUI, passwordFromUI);
-      alert("LOGIN SUCCESS!");
+      console.log("LOGIN SUCCESS");
       console.log(auth.currentUser);
-      navigation.navigate("TabContainerComponent", { screen: "MyBookings" }); //https://reactnavigation.org/docs/nesting-navigators/#navigating-to-a-screen-in-a-nested-navigator
+
+      const docSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
+
+      if (docSnap.exists()) {
+        const profile = docSnap.data(); //saving data as a profile
+        console.log("User profile:", profile); //got to know that i can access profile.role from this
+
+        if (profile && profile.role !== "renter") {
+          alert("This is the Renter app. Please login from the Owner app.");
+          auth.signOut();
+          return;
+        }
+
+        alert("LOGIN SUCCESS!");
+        navigation.navigate("TabContainerComponent", { screen: "MyListings" });
+      }
     } catch (err) {
       console.log("Error when doing login");
       console.log(`Error code: ${err.code}`);
@@ -59,60 +71,6 @@ const LoginScreen = ({ navigation }) => {
     // code to logout user
     auth.signOut();
     alert("User is logged out!");
-  };
-
-  const createAccountPressed = async () => {
-    console.log("Creating account...");
-    setErrorMessageLabel(null);
-
-    if (!emailFromUI || !passwordFromUI) {
-      setErrorMessageLabel("Email and password cannot be empty");
-      return;
-    }
-    if (passwordFromUI.length < 6) {
-      setErrorMessageLabel("Password must be at least 6 characters long");
-      return;
-    }
-
-    try {
-      // 1. attempt to create the account with the given email/password
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        emailFromUI,
-        passwordFromUI
-      );
-
-      // 2. if successful, then a copy of the account information will be stored in the
-      // userCredential variable
-      console.log(userCredential);
-
-      alert("Account created successfully!");
-
-      // 3. what is the email address of the created account
-      console.log(`Email of account: ${userCredential.user.email}`);
-      console.log(`Firebase uid for this account: ${userCredential.user.uid}`);
-
-      // 4. navigate you to the next screen of the app
-      // navigation.navigate("Home")
-    } catch (err) {
-      console.log("Error when creating user");
-      console.log(`Error code: ${err.code}`);
-      console.log(`Error message: ${err.message}`);
-
-      if (err.code === "auth/email-already-in-use") {
-        setErrorMessageLabel(
-          "This email is already registered. Try logging in instead."
-        );
-      } else if (err.code === "auth/invalid-email") {
-        setErrorMessageLabel("Please enter a valid email address.");
-      } else if (err.code === "auth/weak-password") {
-        setErrorMessageLabel(
-          "Password is too weak. It must be at least 6 characters long."
-        );
-      } else {
-        setErrorMessageLabel(err.message);
-      }
-    }
   };
 
   return (
@@ -146,9 +104,6 @@ const LoginScreen = ({ navigation }) => {
         <Text style={styles.primaryBtnLabel}>Login</Text>
       </Pressable>
 
-      <Pressable onPress={createAccountPressed} style={styles.secondaryBtn}>
-        <Text style={styles.secondaryBtnLabel}>Create Account</Text>
-      </Pressable>
       {/* <Pressable onPress={checkLoginStatus} style={styles.btn}>
           <Text style={[styles.btnLabel, { color: "#000" }]}>
             Check for logged in user?
