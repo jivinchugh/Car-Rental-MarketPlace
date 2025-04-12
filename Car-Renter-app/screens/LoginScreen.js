@@ -24,14 +24,10 @@ const LoginScreen = ({ navigation }) => {
   const [passwordFromUI, setPasswordFromUI] = useState("123456");
   const [errorMessageLabel, setErrorMessageLabel] = useState(null);
 
-
   const loginPressed = async () => {
     console.log("Logging in...");
-
-    // Clear any previous error messages
     setErrorMessageLabel(null);
 
-    // Basic validation
     if (!emailFromUI || !passwordFromUI) {
       setErrorMessageLabel("Email and password cannot be empty");
       return;
@@ -41,7 +37,7 @@ const LoginScreen = ({ navigation }) => {
       await signInWithEmailAndPassword(auth, emailFromUI, passwordFromUI);
       alert("LOGIN SUCCESS!");
       console.log(auth.currentUser);
-      navigation.navigate("MyListings");
+      //navigation.navigate("MyListings");
     } catch (err) {
       console.log("Error when doing login");
       console.log(`Error code: ${err.code}`);
@@ -63,17 +59,12 @@ const LoginScreen = ({ navigation }) => {
 
   const createAccountPressed = async () => {
     console.log("Creating account...");
-
-    // Clear any previous error messages
     setErrorMessageLabel(null);
 
-    // Basic validation
     if (!emailFromUI || !passwordFromUI) {
       setErrorMessageLabel("Email and password cannot be empty");
       return;
     }
-
-    // Validate password length
     if (passwordFromUI.length < 6) {
       setErrorMessageLabel("Password must be at least 6 characters long");
       return;
@@ -123,7 +114,7 @@ const LoginScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Turo - Car Marketplace app!</Text>
-      <Text style={styles.subtitle}>Owner App</Text>
+      <Text style={styles.subtitle}>Sign in to continue</Text>
 
       {/* email tb */}
       <TextInput
@@ -146,7 +137,6 @@ const LoginScreen = ({ navigation }) => {
           <Text style={styles.errorText}>{errorMessageLabel}</Text>
         </View>
       )}
-
 
       <Pressable onPress={loginPressed} style={styles.primaryBtn}>
         <Text style={styles.primaryBtnLabel}>Login</Text>
