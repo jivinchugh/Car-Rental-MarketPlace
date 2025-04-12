@@ -24,8 +24,6 @@ const MyBookings = ({ navigation }) => {
   ]);
 
   const handleCancelBooking = (bookingId) => {
-    // In a real app, you would update Firebase here
-    // For now, just update the local state
     const updatedBookings = bookings.filter(
       (booking) => booking.id !== bookingId
     );
