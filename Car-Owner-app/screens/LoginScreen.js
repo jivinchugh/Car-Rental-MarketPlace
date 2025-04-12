@@ -24,7 +24,6 @@ const LoginScreen = ({ navigation }) => {
   const [passwordFromUI, setPasswordFromUI] = useState("123456");
   const [errorMessageLabel, setErrorMessageLabel] = useState(null);
 
-  const [isRenterInUI, setIsRenterInUI] = useState(false);
 
   const loginPressed = async () => {
     console.log("Logging in...");
@@ -124,7 +123,7 @@ const LoginScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Turo - Car Marketplace app!</Text>
-      <Text style={styles.subtitle}>Sign in to continue</Text>
+      <Text style={styles.subtitle}>Owner App</Text>
 
       {/* email tb */}
       <TextInput
@@ -148,10 +147,6 @@ const LoginScreen = ({ navigation }) => {
         </View>
       )}
 
-      <View style={styles.switchRow}>
-        <Text style={styles.switchLabel}>Are you a car renter?</Text>
-        <Switch onValueChange={setIsRenterInUI} value={isRenterInUI} />
-      </View>
 
       <Pressable onPress={loginPressed} style={styles.primaryBtn}>
         <Text style={styles.primaryBtnLabel}>Login</Text>
