@@ -7,33 +7,45 @@ import {
   Image,
 } from "react-native";
 import { useState } from "react";
+import {db, auth} from '../firebaseConfig'
+import {collection, addDoc} from "firebase/firestore";
 
-const CreateListings = ({ navigation }) => {
-  const [model, setModel] = useState("");
-  const [licensePlate, setLicensePlate] = useState("");
-  const [pricePerDay, setPricePerDay] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [city, setCity] = useState("");
-  const [address, setAddress] = useState("");
+const CreateListings = ({ navigation }) => { 
+  const [modelUi, setModelUi] = useState("");
+  const [licensePlateUi, setLicensePlateUi] = useState("");
+  const [pricePerDayUi, setPricePerDayUi] = useState("");
+  const [imageUrlUi, setImageUrlUi] = useState("");
+  const [cityUi, setCityUi] = useState("");
+  const [addressUi, setAddressUi] = useState("");
 
-  const handleSubmit = () => {
+  // function for creating a new listing
+  const handleSubmit = async () => {
     //making sure eery field is filled
-    if ( !model || !licensePlate || !pricePerDay || !city || !address || !imageUrl) {
+    if ( !modelUi || !licensePlateUi || !pricePerDayUi || !cityUi || !addressUi || !imageUrlUi) {
       alert("Please fill all required fields");
       return;
     }
 
-    console.log({
-      model,
-      licensePlate,
-      pricePerDay,
-      imageUrl,
-      city,
-      address,
-      ownerId: "placeholder-owner-id",
-    });
+    const pricePerDayInt = Number(pricePerDayUi);
 
-    alert("Listing created successfully!");
+    // object that will be added into the db
+    const newListing = {
+      model: modelUi,
+      licensePlate: licensePlateUi,
+      pricePerDay: pricePerDayInt,
+      city: cityUi,
+      address: addressUi, 
+      imageUrl: imageUrlUi,
+      userId: auth.currentUser.uid      
+    }
+
+    try {
+      const docRef = await addDoc(collection(db, "car-listing"), newListing);
+      alert("Listing created successfully")
+      console.log(`ID of inserted document is: ${docRef.id}`);
+    } catch (err){
+      console.log(err);
+    }
     //changing the screen to MyListings after creating the listing
     navigation.navigate("MyListings");
   };
@@ -46,24 +58,24 @@ const CreateListings = ({ navigation }) => {
       <TextInput
         style={styles.input}
         placeholder="Urus, Purosangue, R8, etc."
-        value={model}
-        onChangeText={setModel}
+        value={modelUi}
+        onChangeText={setModelUi}
       />
 
       <Text style={styles.label}>License Plate</Text>
       <TextInput
         style={styles.input}
         placeholder="CAN-2003"
-        value={licensePlate}
-        onChangeText={setLicensePlate}
+        value={licensePlateUi}
+        onChangeText={setLicensePlateUi}
       />
 
       <Text style={styles.label}>Daily Rental Price (CAD) </Text>
       <TextInput
         style={styles.input}
         placeholder="50"
-        value={pricePerDay}
-        onChangeText={setPricePerDay}
+        value={pricePerDayUi}
+        onChangeText={setPricePerDayUi}
         keyboardType="numeric"
       />
 
@@ -71,24 +83,24 @@ const CreateListings = ({ navigation }) => {
       <TextInput
         style={styles.input}
         placeholder="https://www.carimage.jpg"
-        value={imageUrl}
-        onChangeText={setImageUrl}
+        value={imageUrlUi}
+        onChangeText={setImageUrlUi}
       />
 
       <Text style={styles.label}>City</Text>
       <TextInput
         style={styles.input}
         placeholder="Toronto, Vancouver, etc."
-        value={city}
-        onChangeText={setCity}
+        value={cityUi}
+        onChangeText={setCityUi}
       />
 
       <Text style={styles.label}>Address </Text>
       <TextInput
         style={styles.input}
         placeholder="1750 Finch Ave E"
-        value={address}
-        onChangeText={setAddress}
+        value={addressUi}
+        onChangeText={setAddressUi}
       />
 
       <Text style={styles.note}>All fields required to be filled</Text>

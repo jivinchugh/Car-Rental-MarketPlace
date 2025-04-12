@@ -10,55 +10,81 @@ import {
   Image,
   FlatList,
 } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { auth, db } from "../firebaseConfig";
+import { collection, getDoc, getDocs, doc, query, where, deleteDoc } from "firebase/firestore";
 
 const MyListings = ({ navigation }) => {
-  const [carListings] = useState([
-    {
-      id: "1",
-      model: "Ferrari Purosangue",
-      licensePlate: "JIV-18",
-      pricePerDay: "105",
-      imageUrl:
-        "https://i.gaw.to/content/photos/62/96/629669-ferrari-purosangue-2024.jpeg",
-      city: "Toronto",
-      address: "75 Crow Trail Dr",
-    },
-    {
-      id: "2",
-      model: "Lamborghini Urus",
-      licensePlate: "SEAN-22",
-      pricePerDay: "95",
-      imageUrl:
-        "https://hips.hearstapps.com/hmg-prod/images/2025-lamborghini-urus-se-phev-106-67005496322ba.jpg?crop=0.633xw:0.534xh;0.223xw,0.427xh&resize=1200:*",
-      city: "Toronto",
-      address: "1750 Finch Ave E",
-    },
-  ]);
+  const [carListings, setCarListings] = useState([]);
 
-  const [bookings] = useState([
-    {
-      id: "booking1",
-      carId: "1",
-      carModel: "Toyota Prius",
-      pricePerDay: "10",
-      renterName: "Sukhman Hara",
-      confirmationCode: "1111",
-      status: "confirmed",
-    },
-    {
-      id: "booking2",
-      carId: "2",
-      carModel: "Tesla Y",
-      pricePerDay: "20",
-      renterName: "Sean Muniz",
-      confirmationCode: "2222",
-      status: "confirmed",
-    },
-  ]);
+  const [bookings, setBookings] = useState([]);
 
-  const cancelbooking = (bookingId) => {
-    alert(`Booking ${bookingId} would be cancelled`);
+  useEffect(() => {
+    getCarListings();
+    getBookings();
+  }, [bookings]);
+
+  const getCarListings = async() => {
+    try {
+      const docSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
+      
+      const profile = docSnap.data(); 
+      
+      if (profile.role !== "owner"){
+        console.log("you are not an owner");
+        return;
+      }
+
+      const q = query(collection(db, "car-listing"), where("userId", "==", auth.currentUser.uid));
+      const querySnapshot = await getDocs(q);
+
+      const results = [];
+
+      querySnapshot.forEach((currDoc) => {
+        results.push({...currDoc.data(), id: currDoc.id});
+      });
+
+      setCarListings(results);
+
+    } catch(err) {
+      console.log(err);
+    }
+  }
+
+  const getBookings = async () => {
+    try{
+      const docSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
+
+      const profile = docSnap.data();
+
+      if (profile.role !== "owner") {
+        console.log("you are not an owner");
+        return;
+      }
+
+      const q = query(collection(db, "bookings"), where("ownerId","==", auth.currentUser.uid));
+      const querySnapshot = await getDocs(q);
+
+      const results = [];
+
+      querySnapshot.forEach((currDoc) => {
+        results.push({...currDoc.data(),id: currDoc.id });
+      });
+
+      setBookings(results);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+
+  const cancelbooking = async (bookingId) => {
+    try {
+      await deleteDoc(doc(db, "bookings", bookingId));
+      alert("cancelled booking!");
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   //used to render listings
@@ -80,13 +106,17 @@ const MyListings = ({ navigation }) => {
   const renderbooking = ({ item }) => (
     <View style={styles.bookingcard}>
       <View style={styles.bookingHeader}>
-        <Text style={styles.bookingcarName}>{item.carModel}</Text>
+        <Text style={styles.bookingcarName}>{item.model}</Text>
       </View>
 
       <View style={styles.bookingtext}>
-        <Text style={styles.bookingInfo}>Price: ${item.pricePerDay}/day</Text>
+        <Text style={styles.bookingInfo}>Price: ${item.price}/day</Text>
         <Text style={styles.bookingInfo}>Renter: {item.renterName}</Text>
-        <Text style={styles.bookingInfo}>Status: {item.status}</Text>
+        {
+          (item.status) ? 
+            <Text style={styles.bookingInfo}>Status: Confirmed</Text> : 
+            <Text style={styles.bookingInfo}>Status: Not Confirmed</Text>
+        }
         <Text style={styles.bookingInfo}>
           Confirmation: {item.confirmationCode}
         </Text>
@@ -279,3 +309,4 @@ const styles = StyleSheet.create({
 });
 
 export default MyListings;
+
