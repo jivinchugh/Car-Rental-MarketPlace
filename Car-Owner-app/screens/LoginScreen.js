@@ -6,6 +6,7 @@ import {
   TextView,
   Switch,
   Pressable,
+  Button
 } from "react-native";
 import { useState } from "react";
 
@@ -110,6 +111,9 @@ const LoginScreen = ({ navigation }) => {
         <Pressable onPress={logoutUser} style={styles.btn}>
           <Text style={[styles.btnLabel, { color: "#000" }]}>Logout?</Text>
         </Pressable>*/}
+
+        {/* uncomment to check if the user is signed out */}
+        {/* <Button title="Check Staus" onPress={() => console.log(auth.currentUser)}/> */}
     </View>
   );
 };

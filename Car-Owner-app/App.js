@@ -14,6 +14,8 @@ import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+import { auth } from "./firebaseConfig";
+
 
 const TabContainerComponent = () => {
   return (
@@ -40,8 +42,12 @@ const TabContainerComponent = () => {
         options={({ navigation }) => ({
           headerRight: () => (
             <Button
-              onPress={() => navigation.navigate("CreateListings")}
-              title="Add New"
+              onPress={() => {
+                auth.signOut();
+                alert("You signed out");
+                navigation.navigate("LoginScreen")
+              }}
+              title="Sign Out"
               color="purple"
               style={{ marginRight: 10 }}
             />

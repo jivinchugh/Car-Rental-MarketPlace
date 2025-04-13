@@ -25,58 +25,32 @@ const MyListings = ({ navigation }) => {
   }, [bookings]);
 
   const getCarListings = async() => {
-    try {
-      const docSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
-      
-      const profile = docSnap.data(); 
-      
-      if (profile.role !== "owner"){
-        console.log("you are not an owner");
-        return;
-      }
-
-      const q = query(collection(db, "car-listing"), where("userId", "==", auth.currentUser.uid));
-      const querySnapshot = await getDocs(q);
-
-      const results = [];
-
-      querySnapshot.forEach((currDoc) => {
-        results.push({...currDoc.data(), id: currDoc.id});
-      });
-
-      setCarListings(results);
-
-    } catch(err) {
-      console.log(err);
-    }
+    doQuery("car-listing", setCarListings);
   }
 
   const getBookings = async () => {
+    doQuery("bookings", setBookings)
+  }
+
+  const doQuery = async (collectionName, setterFunc) => {
     try{
-      const docSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
-
-      const profile = docSnap.data();
-
-      if (profile.role !== "owner") {
-        console.log("you are not an owner");
-        return;
+      let q, querySnapshot;
+      if (collectionName === "bookings"){
+        q = query(collection(db, collectionName), where("ownerId", "==", auth.currentUser.uid));
+        querySnapshot = await getDocs(q);
+      } else{
+        q = query(collection(db, collectionName), where("userId","==", auth.currentUser.uid ));
+        querySnapshot = await getDocs(q);
       }
-
-      const q = query(collection(db, "bookings"), where("ownerId","==", auth.currentUser.uid));
-      const querySnapshot = await getDocs(q);
-
       const results = [];
-
       querySnapshot.forEach((currDoc) => {
-        results.push({...currDoc.data(),id: currDoc.id });
+        results.push({...currDoc.data(), id: currDoc.id});
       });
-
-      setBookings(results);
+      setterFunc(results);
     } catch (err) {
       console.log(err);
     }
   }
-
 
   const cancelbooking = async (bookingId) => {
     try {
@@ -186,6 +160,7 @@ const MyListings = ({ navigation }) => {
           <Text style={styles.addlistingbuttonText}>+ Add New Listing</Text>
         </Pressable>
       </View>
+
     </ScrollView>
   );
 };
