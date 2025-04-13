@@ -111,7 +111,7 @@ const MyListings = ({ navigation }) => {
 
       <View style={styles.bookingtext}>
         <Text style={styles.bookingInfo}>Price: ${item.price}/day</Text>
-        <Text style={styles.bookingInfo}>Renter: {item.renterName}</Text>
+        <Text style={styles.bookingInfo}>Renter: {item.renterId}</Text>
         {
           (item.status) ? 
             <Text style={styles.bookingInfo}>Status: Confirmed</Text> : 

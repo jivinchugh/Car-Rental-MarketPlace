@@ -10,8 +10,19 @@ import {
 } from "react-native";
 import MapView, { Marker, Callout } from "react-native-maps";
 import * as Location from "expo-location";
+import { db, auth } from "../firebaseConfig";
+import {
+  doc,
+  getDoc,
+  addDoc,
+  getDocs,
+  collection,
+  query,
+  where,
+} from "firebase/firestore";
 
 export default function SearchScreen() {
+  const [currLocationLabel, setCurrLocationLabel] = useState();
   const [currentPosition, setCurrentPosition] = useState(null);
   const [visibleMapRegion, setVisibleMapRegion] = useState({
     //default location set as - 255 Main Street, Toronto, ON, Canada
@@ -20,46 +31,23 @@ export default function SearchScreen() {
     latitudeDelta: 0.1,
     longitudeDelta: 0.1,
   });
-
-  const listings = [
-    {
-      id: "1",
-      model: "Ferrari Purosangue",
-      pricePerDay: 105,
-      licensePlate: "JIV-18",
-      imageUrl:
-        "https://i.gaw.to/content/photos/62/96/629669-ferrari-purosangue-2024.jpeg",
-      latitude: 43.6532,
-      longitude: -79.3832,
-      address: "75 Crow Trail Dr",
-      city: "Toronto",
-      ownerName: "Jivin Chugh",
-    },
-    {
-      id: "2",
-      model: "Lamborghini Urus",
-      pricePerDay: 95,
-      licensePlate: "SEAN-22",
-      imageUrl:
-        "https://hips.hearstapps.com/hmg-prod/images/2025-lamborghini-urus-se-phev-106-67005496322ba.jpg",
-      latitude: 43.661,
-      longitude: -79.3802,
-      address: "1750 Finch Ave E",
-      city: "Toronto",
-      ownerName: "Sean Muniz",
-    },
-  ];
+  const [listings, setListings] = useState([]);
 
   useEffect(() => {
     requestPermissions();
     getCurrLocation();
+    getCarListings();
   }, []);
 
+  //function to ask for permissions
   const requestPermissions = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        alert("Permission to access location was denied");
+      const permissionsObject =
+        await Location.requestForegroundPermissionsAsync();
+      if (permissionsObject.status === "granted") {
+        alert("Location permission granted!");
+      } else {
+        alert("Permission denied!");
       }
     } catch (err) {
       console.log(err);
@@ -68,36 +56,113 @@ export default function SearchScreen() {
 
   const getCurrLocation = async () => {
     try {
+      console.log("+++++++++++++++++ getCurrLocation");
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
-
-      const coords = {
+      console.log(location);
+      const currentCoords = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       };
 
-      setCurrentPosition(coords);
+      //display on screen for location
+      setCurrLocationLabel(
+        `Lat: ${location.coords.latitude},\n Lng: ${location.coords.longitude}`
+      );
+      //update the currentPosition state variable
+      setCurrentPosition(currentCoords);
+      //update the visibleMapRegion to the current location
       setVisibleMapRegion({
-        ...coords,
+        latitude: currentCoords.latitude,
+        longitude: currentCoords.longitude,
         latitudeDelta: 0.1,
         longitudeDelta: 0.1,
       });
     } catch (error) {
-      console.log("Error fetching location", error);
+      console.error("ERROR: Failed to get current location", error);
+      setCurrLocationLabel("ERROR: Failed to retrieve current location.");
     }
   };
 
-  const handleBookPress = (listing) => {
-    console.log("Car booked:", {
-      model: listing.model,
-      price: listing.pricePerDay,
-      licensePlate: listing.licensePlate,
-      owner: listing.ownerName,
-      location: `${listing.address}, ${listing.city}`,
-    });
-    alert("Booking done!");
+  //function to get the car listings from the database
+  const getCarListings = async () => {
+    try {
+      // 1. find all the listings (did not do a role check because the user is already logged in as a renter)
+      const q = query(collection(db, "car-listing"));
+      const querySnapshot = await getDocs(q);
+
+      //2. iterate over the listings and create an array of objects
+      const temp = []; //array to hold the listings
+      for (const currDoc of querySnapshot.docs) {
+        const data = currDoc.data();
+
+        // 3. performing forward geocoding to convert address to coordinates
+        //   using the address and city from the listing data, making it in one line to assist
+        // forward geoocoding
+        const addressFromUI = `${data.address}, ${data.city}`;
+        try {
+          const geocodedLocation = await Location.geocodeAsync(addressFromUI);
+          console.log(geocodedLocation); // array of possible locations
+
+          const result = geocodedLocation[0];
+          if (result === undefined) {
+            console.log(
+              "No coordinates found for this address.",
+              addressFromUI
+            );
+            continue; // it was break, but this would disturb the loop,
+            // so changed it to continue in order to makesure that the loop
+            //does not break, and continues to the next listing
+          }
+
+          // console.log(result);
+          // console.log(`Latitude: ${result.latitude}`);
+          // console.log(`Longitude: ${result.longitude}`);
+
+          const outputString = `${addressFromUI} is located at ${result.latitude}, ${result.longitude}`;
+          console.log(outputString);
+
+          // 4. add to final listings array
+          temp.push({
+            ...data,
+            id: currDoc.id,
+            ownerId: data.userId,
+            latitude: result.latitude,
+            longitude: result.longitude,
+          });
+        } catch (geoErr) {
+          console.log(`Geocoding failed for ${addressFromUI}`, geoErr);
+        }
+      }
+      // 5. updating the state variabl
+      setListings(temp);
+    } catch (err) {
+      console.log("Error fetching car listings:", err);
+    }
   };
+
+  const bookcarbtn = async (listing) => {
+    try {
+      const booking = {
+        confirmationCode: "TURO-" + Math.floor(10000 + Math.random() * 90000),
+        model: listing.model,
+        price: listing.pricePerDay,
+        imageUrl: listing.imageUrl,
+        address: listing.address,
+        city: listing.city,
+        renterId: auth.currentUser.uid,
+        ownerId: listing.ownerId,
+        status: "confirmed",
+      };
+      await addDoc(collection(db, "bookings"), booking);
+      alert("Booking successful for " + listing.model);
+    } catch (err) {
+      console.log("Error creating booking:", err); 
+      alert("Failed to book the car. Please try again.");
+    }
+  };
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -124,7 +189,9 @@ export default function SearchScreen() {
               <View style={styles.customMarker}>
                 <Text style={styles.carPrice}>${listing.pricePerDay}</Text>
               </View>
-              <Callout onPress={() => handleBookPress(listing)}>
+              <Callout onPress={() => bookcarbtn(listing)}> {/* the whole card is pressable,
+               because I was not able to make the BOOK-NOW button clicked, had to find a hack, 
+               tried to make the whole callout container clickable and it miraculously worked  -- needs fix! */}
                 <View style={styles.calloutContainer}>
                   <Image
                     source={{ uri: listing.imageUrl }}
@@ -136,7 +203,7 @@ export default function SearchScreen() {
                       ${listing.pricePerDay}/day
                     </Text>
                     <Text style={styles.carInfo}>
-                      Owner: {listing.ownerName}
+                      Owner: {listing.ownerId}
                     </Text>
                     <Text style={styles.carInfo}>
                       License: {listing.licensePlate}
@@ -146,7 +213,7 @@ export default function SearchScreen() {
                     </Text>
                     <Pressable
                       style={styles.bookbutton}
-                      onPress={() => handleBookPress(listing)}
+                      onPress={() => bookcarbtn(listing)}
                     >
                       <Text style={styles.bookbuttonText}>BOOK NOW</Text>
                     </Pressable>
