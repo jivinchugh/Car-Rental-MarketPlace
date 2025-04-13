@@ -6,30 +6,51 @@ import {
   Pressable,
   Image,
 } from "react-native";
-import { useState } from "react";
+import React, { useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { getAuth } from "firebase/auth";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+import { db } from "../firebaseConfig"; // Adjust path if needed
 
 const MyBookings = ({ navigation }) => {
-  const [bookings, setBookings] = useState([
-    {
-      id: "booking1",
-      confirmationCode: "BK12345",
-      model: "Ferrari Purosangue",
-      pricePerDay: "105",
-      imageUrl:
-        "https://i.gaw.to/content/photos/62/96/629669-ferrari-purosangue-2024.jpeg",
-      address: "75 Crow Trail Dr",
-      city: "Toronto",
-      status: "confirmed",
-    },
-  ]);
+  const [bookings, setBookings] = useState([]);
 
-  const handleCancelBooking = (bookingId) => {
-    const updatedBookings = bookings.filter(
-      (booking) => booking.id !== bookingId
-    );
-    setBookings(updatedBookings);
+  useFocusEffect(
+    React.useCallback(() => {
+      const user = getAuth().currentUser;
+      if (!user) return;
 
-    alert("Booking cancelled successfully!");
+      const bookingsQuery = query(
+        collection(db, "bookings"),
+        where("renterId", "==", user.uid)
+      );
+
+      const unsubscribe = onSnapshot(bookingsQuery, (querySnapshot) => {
+        const userBookings = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setBookings(userBookings);
+      });
+
+      return () => unsubscribe(); // Clean up listener
+    }, [])
+  );
+
+  const handleCancelBooking = async (bookingId) => {
+    try {
+      await deleteDoc(doc(db, "bookings", bookingId));
+      alert("Cancelled booking!");
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   const renderBookingItem = ({ item }) => (
@@ -39,10 +60,10 @@ const MyBookings = ({ navigation }) => {
         style={styles.imagestyle}
         resizeMode="cover"
       />
-
       <View style={styles.cardtext}>
         <Text style={styles.carName}>{item.model}</Text>
-        <Text style={styles.carPrice}>${item.pricePerDay}/day</Text>
+        
+        <Text style={styles.carPrice}>${item.price}/day</Text>
         <Text style={styles.carInfo}>Status: {item.status}</Text>
         <Text style={styles.carInfo}>
           Confirmation Code: {item.confirmationCode}
@@ -50,7 +71,6 @@ const MyBookings = ({ navigation }) => {
         <Text style={styles.carInfo}>
           Pickup Location: {item.address}, {item.city}
         </Text>
-
         <Pressable
           style={styles.cancelbutton}
           onPress={() => handleCancelBooking(item.id)}

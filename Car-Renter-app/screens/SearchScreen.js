@@ -19,6 +19,7 @@ import {
   collection,
   query,
   where,
+  deleteDoc
 } from "firebase/firestore";
 
 export default function SearchScreen() {
@@ -144,6 +145,20 @@ export default function SearchScreen() {
 
   const bookcarbtn = async (listing) => {
     try {
+      const renterId = auth.currentUser.uid;
+
+      // 1. Removes existing bookings for this user (limit: one booking)
+      const existingQuery = query(
+        collection(db, "bookings"),
+        where("renterId", "==", renterId)
+      );
+      const existingSnapshot = await getDocs(existingQuery);
+
+      for (const docSnap of existingSnapshot.docs) {
+        await deleteDoc(doc(db, "bookings", docSnap.id));
+      }
+
+      // 2. Create new booking
       const booking = {
         confirmationCode: "TURO-" + Math.floor(10000 + Math.random() * 90000),
         model: listing.model,
@@ -151,18 +166,23 @@ export default function SearchScreen() {
         imageUrl: listing.imageUrl,
         address: listing.address,
         city: listing.city,
-        renterId: auth.currentUser.uid,
+        renterId: renterId,
         ownerId: listing.ownerId,
         status: "confirmed",
+        createdAt: new Date().toISOString(), // optional: useful for sorting
       };
+
       await addDoc(collection(db, "bookings"), booking);
-      alert("Booking successful for " + listing.model);
+
+      // 3. Display success message
+      alert(
+        `Booking successful!\n\nConfirmation Code: ${booking.confirmationCode}\nLocation: ${booking.address}, ${booking.city}`
+      );
     } catch (err) {
-      console.log("Error creating booking:", err); 
+      console.error("Error creating booking:", err);
       alert("Failed to book the car. Please try again.");
     }
   };
-  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -171,7 +191,7 @@ export default function SearchScreen() {
       <View style={styles.mapContainer}>
         <MapView style={styles.map} region={visibleMapRegion}>
           {currentPosition && (
-            <Marker coordinate={currentPosition} pinColor="blue">
+            <Marker coordinate={currentPosition} pinColor='blue'>
               <Callout>
                 <Text>Current Location</Text>
               </Callout>
@@ -189,7 +209,8 @@ export default function SearchScreen() {
               <View style={styles.customMarker}>
                 <Text style={styles.carPrice}>${listing.pricePerDay}</Text>
               </View>
-              <Callout onPress={() => bookcarbtn(listing)}> {/* the whole card is pressable,
+              <Callout onPress={() => bookcarbtn(listing)}>
+                {/* the whole card is pressable,
                because I was not able to make the BOOK-NOW button clicked, had to find a hack, 
                tried to make the whole callout container clickable and it miraculously worked  -- needs fix! */}
                 <View style={styles.calloutContainer}>
@@ -202,9 +223,7 @@ export default function SearchScreen() {
                     <Text style={styles.carPrice}>
                       ${listing.pricePerDay}/day
                     </Text>
-                    <Text style={styles.carInfo}>
-                      Owner: {listing.ownerId}
-                    </Text>
+                    <Text style={styles.carInfo}>Owner: {listing.ownerId}</Text>
                     <Text style={styles.carInfo}>
                       License: {listing.licensePlate}
                     </Text>
