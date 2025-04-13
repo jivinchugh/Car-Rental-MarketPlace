@@ -16,6 +16,7 @@ const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 import { auth } from "./firebaseConfig";
 
+
 const TabContainerComponent = () => {
   return (
     <Tab.Navigator
