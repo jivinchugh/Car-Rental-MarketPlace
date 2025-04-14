@@ -7,7 +7,7 @@ import MyBookings from "./screens/MyBookings";
 import SearchScreen from "./screens/SearchScreen";
 import LoginScreen from "./screens/LoginScreen";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import { auth } from "./firebaseConfig"; // Make sure this path is correct
+import { auth } from "./firebaseConfig";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
