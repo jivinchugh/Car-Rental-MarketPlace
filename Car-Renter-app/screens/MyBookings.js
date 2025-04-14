@@ -17,7 +17,7 @@ import {
   deleteDoc,
   doc,
 } from "firebase/firestore";
-import { db } from "../firebaseConfig"; // Adjust path if needed
+import { db } from "../firebaseConfig"; 
 
 const MyBookings = ({ navigation }) => {
   const [bookings, setBookings] = useState([]);
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 16,
     color: "purple",
-    marginTop: 50,
+    marginTop: 10,
   },
   listContainer: {
     paddingBottom: 20,
