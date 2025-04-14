@@ -80,6 +80,7 @@ export default function App() {
           options={{
             headerShown: false,
             headerBackVisible: false,
+            gestureEnabled: false, // Prevent swipe back to login
           }}
         />
       </Stack.Navigator>
