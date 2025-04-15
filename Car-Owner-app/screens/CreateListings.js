@@ -63,7 +63,7 @@ const CreateListings = ({ navigation }) => {
         imageUrl: imageUrlUi,
         userId: auth.currentUser.uid,
         // Include coordinates if geocoding was successful
-        ...(latitude && longitude ? { latitude, longitude } : {})
+        ...(latitude !== null && longitude !== null ? { latitude, longitude } : {})
       }
 
       const docRef = await addDoc(collection(db, "car-listing"), newListing);
