@@ -89,54 +89,45 @@ export default function SearchScreen() {
   //function to get the car listings from the database
   const getCarListings = async () => {
     try {
-      // 1. find all the listings (did not do a role check because the user is already logged in as a renter)
+      // 1. find all the listings
       const q = query(collection(db, "car-listing"));
       const querySnapshot = await getDocs(q);
 
-      //2. iterate over the listings and create an array of objects
-      const temp = []; //array to hold the listings
+      // 2. iterate over the listings and create an array of objects
+      const temp = [];
       for (const currDoc of querySnapshot.docs) {
         const data = currDoc.data();
-
-        // 3. performing forward geocoding to convert address to coordinates
-        //   using the address and city from the listing data, making it in one line to assist
-        // forward geoocoding
-        const addressFromUI = `${data.address}, ${data.city}`;
-        try {
-          const geocodedLocation = await Location.geocodeAsync(addressFromUI);
-          console.log(geocodedLocation); // array of possible locations
-
-          const result = geocodedLocation[0];
-          if (result === undefined) {
-            console.log(
-              "No coordinates found for this address.",
-              addressFromUI
-            );
-            continue; // it was break, but this would disturb the loop,
-            // so changed it to continue in order to makesure that the loop
-            //does not break, and continues to the next listing
-          }
-
-          // console.log(result);
-          // console.log(`Latitude: ${result.latitude}`);
-          // console.log(`Longitude: ${result.longitude}`);
-
-          const outputString = `${addressFromUI} is located at ${result.latitude}, ${result.longitude}`;
-          console.log(outputString);
-
-          // 4. add to final listings array
+        
+        // If we have stored coordinates, use them directly
+        if (data.latitude && data.longitude) {
           temp.push({
             ...data,
             id: currDoc.id,
             ownerId: data.userId,
-            latitude: result.latitude,
-            longitude: result.longitude,
+            latitude: data.latitude,
+            longitude: data.longitude,
           });
-        } catch (geoErr) {
-          console.log(`Geocoding failed for ${addressFromUI}`, geoErr);
+        } else {
+          // Fallback to geocoding if coordinates aren't stored
+          const addressFromUI = `${data.address}, ${data.city}`;
+          try {
+            const geocodedLocation = await Location.geocodeAsync(addressFromUI);
+            const result = geocodedLocation[0];
+            if (result) {
+              temp.push({
+                ...data,
+                id: currDoc.id,
+                ownerId: data.userId,
+                latitude: result.latitude,
+                longitude: result.longitude,
+              });
+            }
+          } catch (geoErr) {
+            console.log(`Geocoding failed for ${addressFromUI}`, geoErr);
+          }
         }
       }
-      // 5. updating the state variabl
+      
       setListings(temp);
     } catch (err) {
       console.log("Error fetching car listings:", err);
